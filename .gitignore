@@ -1,37 +1,22 @@
-# Byte-compiled / optimized / DLL files
+# Entorno virtual
+venv/
+
+# Archivos de configuración sensibles
+.env
+
+# Archivos temporales
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Environment
-.venv/
-venv/
-ENV/
-.env
-.env.*
-
-cache_*
-*.sqlite3
-*.db
-*.db-wal
-*.db-shm
-
-# macOS
-.DS_Store
-
-# VSCode
-.vscode/
-
-# Logs
 *.log
 
-# Jupyter
-.ipynb_checkpoints
+# Bases de datos locales
+*.db
 
-# Pillow image cache
-*.thumb
+# Configuraciones de IDE
+.vscode/
+.idea/
+*.swp
 
-# pyinstaller
-*.spec
-dist/
-build/
+# Archivos del sistema
+.DS_Store
+Thumbs.db

@@ -1,108 +1,85 @@
-# ✨ Proyecto: Traducción de Subtítulos en Tiempo Real
+# 🎬 TranslateOnline
 
-Este proyecto permite capturar subtítulos desde cualquier plataforma de streaming (como Prime Video, Netflix, etc.) y traducirlos en tiempo real utilizando OCR (Tesseract) y la API de Gemini.
+Traducción automática en tiempo real de subtítulos en pantalla utilizando OCR, Google Gemini y una interfaz superpuesta.
 
 ---
 
-## 📦 Instalación de dependencias
+## 📦 Estructura del proyecto (basado en DDD)
 
-### 1. Clonar el repositorio o crear el directorio del proyecto
+```
+translater/
+├── app.py                          # Punto de entrada
+├── domain/
+│   └── translation_service.py      # Lógica de traducción (cache + Gemini)
+├── infrastructure/
+│   └── ocr.py                      # Captura de subtítulos con OCR
+├── data/
+│   └── repository.py               # Acceso a la base de datos SQLite
+├── ui/
+│   └── gui.py                      # Interfaz gráfica con Tkinter
+├── traduciones.db                  # Base de datos SQLite con las traducciones
+├── .env                            # Contiene tu API KEY de Gemini (no subir)
+├── .gitignore                      # Ignora archivos sensibles
+├── requirements.txt                # Dependencias del proyecto
+└── README.md                       # Este archivo
+```
 
-Asegúrate de tener el archivo `TranslateOnline.py` en tu carpeta de trabajo.
+---
 
-### 2. Crear entorno virtual (opcional pero recomendado)
+## 🚀 Cómo ejecutar
 
+1. **Clona el repositorio:**
 ```bash
-python3 -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+git clone <URL-del-repo>
+cd translater
 ```
 
-### 3. Instalar los requisitos del proyecto
-
+2. **Instala las dependencias:**
 ```bash
-pip install -r requirements_subtitulos.txt
+pip install -r requirements.txt
 ```
 
----
-
-## 🔐 Variables de entorno
-
-Crea un archivo `.env` en el directorio del proyecto con la siguiente variable:
-
-```env
-GEMINI_API_KEY=tu_clave_de_google_ai_aquí
+3. **Crea un archivo `.env` con tu API Key de Gemini:**
+```
+GEMINI_API_KEY=tu_clave_aqui
 ```
 
-Puedes obtener una clave de API desde [Google AI Studio](https://aistudio.google.com/app/apikey).
-
----
-
-## 🧠 Instalación de Tesseract
-
-### En macOS:
-
+4. **Ejecuta el programa:**
 ```bash
-brew install tesseract
-```
-
-### En Ubuntu/Debian:
-
-```bash
-sudo apt update && sudo apt install tesseract-ocr
-```
-
-### En Windows:
-
-- Descarga desde: [https://github.com/tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)
-- Agrega la ruta del ejecutable a la variable de entorno `PATH`.
-- Edita la siguiente línea en tu script si es necesario:
-
-```python
-pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+python app.py
 ```
 
 ---
 
-## ▶️ Ejecutar la aplicación
+## 🧠 Funcionalidades
 
-Con todo configurado:
-
-```bash
-python TranslateOnline.py
-```
-
-Esto abrirá una ventana flotante con fondo negro que mostrará la traducción de los subtítulos que aparecen en pantalla.
-
----
-
-## 📅 Características
-
-- Traducción en tiempo real con Gemini 2.0 Flash Lite
-- Cacheo de traducciones para mejor rendimiento
-- OCR optimizado con Tesseract en una región de pantalla definida
-- Ventana flotante sobre cualquier aplicación, incluso a pantalla completa
-- Ajuste automático del texto al tamaño de ventana
+- Traduce automáticamente subtítulos desde cualquier película o serie.
+- Guarda y reutiliza traducciones para mejorar velocidad.
+- Modo "Nuevo filme" para agregar películas distintas.
+- Traducciones se almacenan por título.
+- Control de opacidad.
+- Diferencia de color si proviene de caché (amarillo) o API (cian).
+- Interfaz siempre al frente, incluso en modo pantalla completa.
 
 ---
 
-## 🚀 Requisitos clave (resumen)
-
-- Python 3.9+
-- `tesseract` instalado y configurado
-- Cuenta de Google AI con clave de API
-- Dependencias listadas en `requirements_subtitulos.txt`
-
----
-
-## ✅ Contribuciones
-
-Este proyecto fue desarrollado para ayudar a personas multilingües o estudiantes de idiomas a ver contenido traducido en tiempo real.
-
-¡Pull requests y sugerencias son bienvenidas!
+## 🧱 Requisitos
+- Python 3.10+
+- Tesseract OCR instalado y accesible desde tu sistema:
+    - macOS (via Homebrew):
+      ```bash
+      brew install tesseract
+      ```
 
 ---
 
-## © Licencia
+## ⚠️ Notas
+- Las traducciones solo se guardan al presionar el botón **Stop**.
+- La base de datos `traduciones.db` se actualiza de forma incremental.
+- El modelo usado por defecto es `gemini-2.0-flash-lite` para mejor velocidad.
 
-Este proyecto está disponible bajo la licencia MIT.
+---
+
+## 📄 Licencia
+MIT © 2025
 
