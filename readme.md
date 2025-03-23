@@ -1,60 +1,108 @@
-**README.md**
-```markdown
-# 🎬 Live Subtitle Translator
+# ✨ Proyecto: Traducción de Subtítulos en Tiempo Real
 
-Traduce subtítulos en pantalla en tiempo real mientras miras películas, series o anime.
+Este proyecto permite capturar subtítulos desde cualquier plataforma de streaming (como Prime Video, Netflix, etc.) y traducirlos en tiempo real utilizando OCR (Tesseract) y la API de Gemini.
 
 ---
 
-## 🚀 Características
-- Traducción automática de subtítulos desde la pantalla.
-- Captura OCR con Tesseract.
-- Traducción en tiempo real usando [Gemini Pro](https://ai.google.dev/).
-- Ventana flotante (overlay) sobre el video.
-- Compatible con pantalla completa.
-- Cache para traducciones repetidas.
-- Super rápido usando multihilo.
+## 📦 Instalación de dependencias
 
----
+### 1. Clonar el repositorio o crear el directorio del proyecto
 
-## 🧩 Requisitos
+Asegúrate de tener el archivo `TranslateOnline.py` en tu carpeta de trabajo.
 
-Instala dependencias con:
+### 2. Crear entorno virtual (opcional pero recomendado)
+
 ```bash
-pip install -r requirements.txt
+python3 -m venv venv
+source venv/bin/activate  # En Windows: venv\Scripts\activate
 ```
 
-Además, necesitas:
-- [Tesseract OCR](https://github.com/tesseract-ocr/tesseract)
-- Clave API de Gemini en `.env`:
-```env
-GEMINI_API_KEY=tu_clave_aqui
+### 3. Instalar los requisitos del proyecto
+
+```bash
+pip install -r requirements_subtitulos.txt
 ```
 
 ---
 
-## 🛠 Uso
+## 🔐 Variables de entorno
+
+Crea un archivo `.env` en el directorio del proyecto con la siguiente variable:
+
+```env
+GEMINI_API_KEY=tu_clave_de_google_ai_aquí
+```
+
+Puedes obtener una clave de API desde [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+---
+
+## 🧠 Instalación de Tesseract
+
+### En macOS:
+
+```bash
+brew install tesseract
+```
+
+### En Ubuntu/Debian:
+
+```bash
+sudo apt update && sudo apt install tesseract-ocr
+```
+
+### En Windows:
+
+- Descarga desde: [https://github.com/tesseract-ocr/tesseract](https://github.com/tesseract-ocr/tesseract)
+- Agrega la ruta del ejecutable a la variable de entorno `PATH`.
+- Edita la siguiente línea en tu script si es necesario:
+
+```python
+pytesseract.pytesseract.tesseract_cmd = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+```
+
+---
+
+## ▶️ Ejecutar la aplicación
+
+Con todo configurado:
+
 ```bash
 python TranslateOnline.py
 ```
 
-- Por defecto traduce desde **italiano a español**.
-- Puedes cambiar el idioma en el prompt dentro del código (`traducir_streaming`).
+Esto abrirá una ventana flotante con fondo negro que mostrará la traducción de los subtítulos que aparecen en pantalla.
 
 ---
 
-## 💻 Configuración
-Puedes ajustar la ventana, posición, tamaño y región de captura en:
-```python
-REGION = {"top": 800, "left": 100, "width": 1000, "height": 120}
-```
+## 📅 Características
+
+- Traducción en tiempo real con Gemini 2.0 Flash Lite
+- Cacheo de traducciones para mejor rendimiento
+- OCR optimizado con Tesseract en una región de pantalla definida
+- Ventana flotante sobre cualquier aplicación, incluso a pantalla completa
+- Ajuste automático del texto al tamaño de ventana
 
 ---
 
-## 📷 Ejemplo visual
-![Ejemplo](docs/demo.gif)
+## 🚀 Requisitos clave (resumen)
+
+- Python 3.9+
+- `tesseract` instalado y configurado
+- Cuenta de Google AI con clave de API
+- Dependencias listadas en `requirements_subtitulos.txt`
 
 ---
 
-## 📄 Licencia
-MIT - Haz lo que quieras con este código 😄
+## ✅ Contribuciones
+
+Este proyecto fue desarrollado para ayudar a personas multilingües o estudiantes de idiomas a ver contenido traducido en tiempo real.
+
+¡Pull requests y sugerencias son bienvenidas!
+
+---
+
+## © Licencia
+
+Este proyecto está disponible bajo la licencia MIT.
+
