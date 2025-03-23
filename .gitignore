@@ -10,6 +10,12 @@ ENV/
 .env
 .env.*
 
+cache_*
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+
 # macOS
 .DS_Store
 
