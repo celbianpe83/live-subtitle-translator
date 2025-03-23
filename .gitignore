@@ -1,0 +1,31 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.venv/
+venv/
+ENV/
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# VSCode
+.vscode/
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints
+
+# Pillow image cache
+*.thumb
+
+# pyinstaller
+*.spec
+dist/
+build/
