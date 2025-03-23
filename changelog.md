@@ -1,1 +1,1 @@
-- removiendo arquivos no necessarios (celbianpe-spec)
+- feat(ui): interfaz mejorada con controles de transparencia y refinamientos de flujo (celbianpe-spec)
