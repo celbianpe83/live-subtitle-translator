@@ -1,6 +1,6 @@
 import threading
 import time
-from infrastructure.capturers.base import SubtitleCapturer
+from infrastructure.capturers.base.base_capturer import SubtitleCapturer
 
 class BrowserSubtitleCapturer(SubtitleCapturer):
     def __init__(self, on_texto):

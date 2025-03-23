@@ -3,7 +3,7 @@ import pytesseract
 from PIL import Image
 import mss
 import threading
-from infrastructure.capturers.base import SubtitleCapturer  # interfaz base
+from infrastructure.capturers.base.base_capturer import SubtitleCapturer  # interfaz base
 
 class OCRCapturer(SubtitleCapturer):
     def __init__(self, region, on_texto, lang="ita"):
