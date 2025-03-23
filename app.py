@@ -1,34 +1,61 @@
-from tkinter import Tk
+import tkinter as tk
 from domain.translation_service import TranslationService
-from infrastructure.ocr import OCRCapturer
 from data.repository import TranslationRepository
-from ui.gui import TranslationUI
+from infrastructure.ocr import OCRCapturer
+from ui.gui import SubtitleApp
+from infrastructure.translator_adapter import GeminiTranslatorAdapter
 
-# --- Inicialización ---
-db = TranslationRepository()
-translator = TranslationService()
-ocr = OCRCapturer(region={"top": 800, "left": 100, "width": 1000, "height": 120})
-root = Tk()
+REGION = {"top": 800, "left": 100, "width": 1000, "height": 120}
+DB_PATH = "traduciones.db"
 
-# --- Funciones de control ---
-def iniciar(filme):
-    translator.cargar_cache(filme, db)
-    ocr.start(lambda texto: translator_callback(texto, filme))
+class AppController:
+    def __init__(self, root):
+        self.root = root
+        self.db = TranslationRepository(DB_PATH)
+        self.translation_service = TranslationService(GeminiTranslatorAdapter())
+        self.ocr = None
+        self.filme_actual = None
 
-def detener():
-    ocr.stop()
-    translator_ui.set_texto("💾 Guardando nuevas traducciones...")
-    root.update_idletasks()
-    translator.sincronizar_con_db(translator_ui.get_film(), db)
-    translator_ui.set_texto("")
+        self.gui = SubtitleApp(root, self.on_play, self.on_stop)
+        filmes = self.db.obtener_titulos_existentes()
+        self.gui.set_options(filmes)
 
-def translator_callback(texto, filme):
-    if texto:
-        traducido = translator.traducir(texto, etiqueta=translator_ui.get_etiqueta())
-        translator_ui.set_texto(traducido)
-    else:
-        translator_ui.set_texto("")
+    def on_play(self, filme):
+        self.filme_actual = filme
+        traducciones = self.db.obtener_traducciones_por_filme(filme)
+        self.translation_service.configurar_cache(traducciones)
 
-# --- UI ---
-translator_ui = TranslationUI(root, iniciar, detener, db.obtener_titulos_existentes())
-root.mainloop()
+        self.ocr = OCRCapturer(region=REGION, on_texto=self.traducir_texto)
+        self.ocr.start()
+
+    def on_stop(self):
+        self.gui.show_guardando()
+        nuevas = self.translation_service.obtener_nuevas_traducciones()
+        for original, traducido in nuevas.items():
+            self.db.guardar_traduccion(self.filme_actual, original, traducido)
+
+        self.db.conn.commit()
+        self.db.conn.close()
+        self.root.quit()
+
+    def traducir_texto(self, texto):
+        if not texto:
+            return  # evita traducir texto vacío
+        traduccion, en_cache = self.translation_service.traducir(texto)
+        color = "yellow" if en_cache else "cyan"
+        self.gui.set_traduccion(traduccion, color=color)
+
+
+def main():
+    root = tk.Tk()
+    root.geometry("850x100+180+540")
+    root.title("Live Subtitle Translator")
+    root.configure(bg="black")
+    root.overrideredirect(True)
+    root.wm_attributes("-topmost", True)
+
+    app = AppController(root)
+    root.mainloop()
+
+if __name__ == "__main__":
+    main()

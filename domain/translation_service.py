@@ -1,62 +1,46 @@
-import os
-from dotenv import load_dotenv
-from google import genai
-from google.genai import types
-
-load_dotenv()
-
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-model_name = "models/gemini-2.0-flash-lite"
-
 class TranslationService:
-    def __init__(self):
+    """
+    Servicio de traducción con control de caché y sincronización de nuevas traducciones.
+    """
+
+    def __init__(self, translator_adapter):
+        """
+        Inicializa el servicio de traducción con un adaptador externo (por ejemplo, Gemini).
+
+        :param translator_adapter: Objeto que implementa el método traducir(texto)
+        """
+        self.translator = translator_adapter
         self.cache = {}
         self.nuevas = {}
 
-    def traducir(self, texto, etiqueta=None):
+    def traducir(self, texto):
+        """
+        Traduce el texto si no está en caché; si ya existe, lo devuelve directamente.
+
+        :param texto: Texto original a traducir
+        :return: Tuple (traduccion, en_cache: bool)
+        """
         if texto in self.cache:
-            if etiqueta:
-                etiqueta.config(fg="yellow")
-            return self.cache[texto]
+            return self.cache[texto], True
 
-        if etiqueta:
-            etiqueta.config(fg="cyan")
-
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=f"Traduce al espanol lo siguiente, responde solo con la traducción:\n\n\"{texto}\"")],
-            ),
-        ]
-
-        config = types.GenerateContentConfig(
-            temperature=0.3,
-            top_p=0.9,
-            top_k=20,
-            max_output_tokens=128,
-            response_mime_type="text/plain",
-        )
-
-        resultado = ""
-        for chunk in client.models.generate_content_stream(
-            model=model_name,
-            contents=contents,
-            config=config
-        ):
-            if chunk.text:
-                resultado += chunk.text
-
-        traduccion = resultado.strip()
+        traduccion = self.translator.traducir(texto)
         self.cache[texto] = traduccion
         self.nuevas[texto] = traduccion
-        return traduccion
+        return traduccion, False
 
-    def cargar_cache(self, filme, db):
-        resultados = db.obtener_traducciones_por_filme(filme)
-        for original, traducido in resultados:
-            self.cache[original] = traducido
+    def configurar_cache(self, traducciones_guardadas):
+        """
+        Carga traducciones anteriores desde base de datos al caché.
 
-    def sincronizar_con_db(self, filme, db):
-        for original, traducido in self.nuevas.items():
-            db.guardar_traduccion(filme, original, traducido)
+        :param traducciones_guardadas: Dict con claves "original" y valores "traducido"
+        """
+        self.cache.update(traducciones_guardadas)
         self.nuevas.clear()
+
+    def obtener_nuevas_traducciones(self):
+        """
+        Devuelve solo las nuevas traducciones registradas desde la última sesión.
+
+        :return: Dict de traducciones nuevas
+        """
+        return self.nuevas

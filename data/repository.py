@@ -31,6 +31,14 @@ class TranslationRepository:
                 "INSERT OR IGNORE INTO traducciones (filme, original, traducido) VALUES (?, ?, ?)",
                 (filme, original, traducido)
             )
-            self.conn.commit()
         except Exception as e:
             print(f"Error al guardar traducción: {e}")
+
+    def guardar_traducciones(self, filme, nuevas_traducciones):
+        for original, traducido in nuevas_traducciones.items():
+            self.guardar_traduccion(filme, original, traducido)
+        self.conn.commit()
+
+    def cerrar(self):
+        self.conn.commit()
+        self.conn.close()
