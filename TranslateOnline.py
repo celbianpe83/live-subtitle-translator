@@ -2,7 +2,7 @@ import os
 import time
 import threading
 import tkinter as tk
-from tkinter import StringVar
+from tkinter import StringVar, ttk
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -18,89 +18,21 @@ load_dotenv()
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 model_name = "models/gemini-2.0-flash-lite"
 
-# --- Región de captura de subtítulos ---
 REGION = {"top": 800, "left": 100, "width": 1000, "height": 120}
 pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
 
 # --- Estado global ---
-sub_vistos = set()
+cache = {}
+nuevas_traducciones = {}
 ultimo_texto = ""
 ultima_actualizacion = time.time()
-traducciones_cache = {}
+traduccion_color = "cyan"
 executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-# --- Inicializar banco de dados SQLite com controle de concorrência ---
-lock_db = threading.Lock()
-db_conn = sqlite3.connect("traduciones.db", check_same_thread=False)
-db_cursor = db_conn.cursor()
-db_cursor.execute("""
-    CREATE TABLE IF NOT EXISTS traducciones (
-        filme TEXT,
-        original TEXT,
-        traducido TEXT,
-        UNIQUE(filme, original)
-    )
-""")
-db_conn.commit()
-
-# --- Funções para salvar e recuperar traduções ---
-def salvar_traducao_segura(filme, original, traducido):
-    with lock_db:
-        try:
-            db_cursor.execute("INSERT OR IGNORE INTO traducciones (filme, original, traducido) VALUES (?, ?, ?)", (filme, original, traducido))
-            db_conn.commit()
-        except Exception as e:
-            print(f"Erro ao salvar tradução: {e}")
-
-def carregar_traduzidos_filme(filme):
-    with lock_db:
-        db_cursor.execute("SELECT original, traducido FROM traducciones WHERE filme = ?", (filme,))
-        return dict(db_cursor.fetchall())
-
-# --- Traducción usando streaming com Gemini ---
-def traducir_streaming(texto):
-    try:
-        if texto in traducciones_cache:
-            return traducciones_cache[texto]
-
-        contents = [
-            types.Content(
-                role="user",
-                parts=[
-                    types.Part.from_text(text=f"Traduce al espanol lo siguiente, responde solo con la traducción:\n\n\"{texto}\""),
-                ],
-            ),
-        ]
-
-        config = types.GenerateContentConfig(
-            temperature=0.3,
-            top_p=0.9,
-            top_k=20,
-            max_output_tokens=128,
-            response_mime_type="text/plain",
-        )
-
-        resultado = ""
-        for chunk in client.models.generate_content_stream(
-            model=model_name,
-            contents=contents,
-            config=config
-        ):
-            if chunk.text:
-                resultado += chunk.text
-
-        resultado = resultado.strip()
-        traducciones_cache[texto] = resultado
-        salvar_traducao_segura(filme_atual.get(), texto, resultado)
-        return resultado
-
-    except Exception as e:
-        return f"⚠️ Error: {e}"
-
-# --- Criar interface gráfica ---
+# --- Crear ventana ---
 root = tk.Tk()
 root.title("Overlay de subtítulos")
-root.geometry("850x100+180+540")
+root.geometry("850x120+180+540")
 root.overrideredirect(True)
 root.wm_attributes("-topmost", True)
 root.wm_attributes("-alpha", 0.75)
@@ -111,57 +43,185 @@ try:
 except tk.TclError:
     pass
 
+# --- UI Variables ---
 traducido_var = StringVar()
-filme_atual = StringVar()
+status_var = StringVar()
+titulo_var = StringVar()
 
-etiqueta = tk.Label(
-    root,
-    textvariable=traducido_var,
-    font=("Helvetica", 24, "bold"),
-    fg="cyan",
-    bg="black",
-    justify="center"
-)
-etiqueta.pack(fill="both", expand=True, padx=40, pady=20)
+# --- Etiquetas y controles ---
+frame = tk.Frame(root, bg="black")
+frame.pack(side="bottom", pady=5)
 
-entrada_filme = tk.Entry(root, textvariable=filme_atual, font=("Helvetica", 14))
-entrada_filme.place(x=10, y=5, width=400)
+label_combo = tk.Label(frame, text="Selecciona filme:", bg="black", fg="white")
+label_combo.grid(row=0, column=0)
 
-boton_iniciar = tk.Button(root, text="▶️ Iniciar", command=lambda: iniciar_traduccion(), font=("Helvetica", 12))
-boton_iniciar.place(x=420, y=5)
+combo_filmes = ttk.Combobox(frame, state="readonly")
+combo_filmes.grid(row=0, column=1)
+combo_filmes.set("Seleccionar filme")
 
-# Ajustar largura
+entry_nuevo = tk.Entry(frame, state="disabled")
+entry_nuevo.grid(row=0, column=2)
+
+btn_play = tk.Button(frame, text="Play", state="disabled")
+btn_play.grid(row=0, column=3, padx=5)
+
+btn_stop = tk.Button(frame, text="Stop", state="disabled")
+btn_stop.grid(row=0, column=4, padx=5)
+
+status_label = tk.Label(root, textvariable=status_var, bg="black", fg="yellow")
+status_label.pack(side="bottom")
+
+etiqueta = tk.Label(root, textvariable=traducido_var, font=("Helvetica", 24, "bold"), fg="cyan", bg="black", justify="center")
+etiqueta.pack(fill="both", expand=True, padx=40, pady=10)
 
 def ajustar_wrap(event):
     etiqueta.config(wraplength=event.width - 80)
 
 root.bind("<Configure>", ajustar_wrap)
 
-# --- Captura de pantalla y procesamiento ---
+# --- Base de datos ---
+DB_FILE = "traduciones.db"
+
+def obtener_filmes():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        cursor.execute("SELECT DISTINCT filme FROM traducciones")
+        filmes = [row[0] for row in cursor.fetchall()]
+        conn.close()
+        return filmes
+    except Exception as e:
+        print("Error al obtener filmes:", e)
+        return []
+
+def cargar_cache_desde_db(nombre):
+    global cache
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT original, traducido FROM traducciones WHERE filme = ?", (nombre,))
+    for original, traducido in cursor.fetchall():
+        cache[original.lower()] = traducido
+    conn.close()
+
+def sincronizar_traducciones(nombre):
+    if not nuevas_traducciones:
+        return
+    status_var.set("Guardando nuevas traducciones...")
+    root.update_idletasks()
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        for original, traducido in nuevas_traducciones.items():
+            cursor.execute("INSERT OR IGNORE INTO traducciones (filme, original, traducido) VALUES (?, ?, ?)", (nombre, original, traducido))
+        conn.commit()
+        conn.close()
+    except Exception as e:
+        print("Error al guardar:", e)
+    status_var.set("")
+
+# --- Traducción Gemini ---
+def traducir_streaming(texto):
+    if texto.lower() in cache:
+        global traduccion_color
+        traduccion_color = "yellow"
+        return cache[texto.lower()]
+
+    traduccion_color = "cyan"
+    contents = [
+        types.Content(
+            role="user",
+            parts=[
+                types.Part.from_text(text=f"Traduce al espanol lo siguiente, responde solo con la traducción:\n\n\"{texto}\""),
+            ],
+        ),
+    ]
+    config = types.GenerateContentConfig(
+        temperature=0.3,
+        top_p=0.9,
+        top_k=20,
+        max_output_tokens=128,
+        response_mime_type="text/plain",
+    )
+    resultado = ""
+    for chunk in client.models.generate_content_stream(
+        model=model_name,
+        contents=contents,
+        config=config
+    ):
+        if chunk.text:
+            resultado += chunk.text
+
+    cache[texto.lower()] = resultado.strip()
+    nuevas_traducciones[texto] = resultado.strip()
+    return resultado.strip()
+
+# --- OCR ---
 def procesar_ocr(img):
     global ultimo_texto, ultima_actualizacion
     texto = pytesseract.image_to_string(img, lang="ita").strip()
-
     if texto and texto.lower() != ultimo_texto.lower():
         ultimo_texto = texto
         ultima_actualizacion = time.time()
         traduccion = traducir_streaming(texto)
         traducido_var.set(traduccion)
+        etiqueta.config(fg=traduccion_color)
     elif time.time() - ultima_actualizacion > 3:
         traducido_var.set("")
 
-# --- OCR loop com concorrência ---
-def capturar_y_traducir():
-    traducciones_cache.update(carregar_traduzidos_filme(filme_atual.get()))
+# --- OCR Loop ---
+def capturar_loop():
     with mss.mss() as sct:
-        while True:
+        while btn_stop["state"] == "normal":
             captura = sct.grab(REGION)
             img = Image.frombytes("RGB", captura.size, captura.rgb)
             executor.submit(procesar_ocr, img)
             time.sleep(0.6)
 
-# --- Controlador do botão ---
-def iniciar_traduccion():
-    threading.Thread(target=capturar_y_traducir, daemon=True).start()
+# --- Eventos de UI ---
+def iniciar():
+    nombre = entry_nuevo.get().strip() if combo_filmes.get() == "Nuevo filme" else combo_filmes.get()
+    if not nombre:
+        return
+    cargar_cache_desde_db(nombre)
+    ocultar_controles()
+    btn_stop.config(state="normal")
+    threading.Thread(target=capturar_loop, daemon=True).start()
+
+def detener():
+    btn_stop.config(state="disabled")
+    sincronizar_traducciones(titulo_var.get())
+    mostrar_controles()
+
+def ocultar_controles():
+    combo_filmes.grid_remove()
+    entry_nuevo.grid_remove()
+    btn_play.grid_remove()
+
+def mostrar_controles():
+    combo_filmes.grid()
+    entry_nuevo.grid()
+    btn_play.grid()
+
+def on_combo_change(event):
+    seleccion = combo_filmes.get()
+    entry_nuevo.config(state="normal" if seleccion == "Nuevo filme" else "disabled")
+    btn_play.config(state="normal" if seleccion != "Seleccionar filme" or entry_nuevo.get().strip() else "disabled")
+    if seleccion != "Nuevo filme":
+        titulo_var.set(seleccion)
+
+def on_entry_change(event):
+    if combo_filmes.get() == "Nuevo filme":
+        btn_play.config(state="normal" if entry_nuevo.get().strip() else "disabled")
+        titulo_var.set(entry_nuevo.get().strip())
+
+combo_filmes.bind("<<ComboboxSelected>>", on_combo_change)
+entry_nuevo.bind("<KeyRelease>", on_entry_change)
+btn_play.config(command=iniciar)
+btn_stop.config(command=detener)
+
+# --- Iniciar UI ---
+opciones = ["Seleccionar filme", "Nuevo filme"] + obtener_filmes()
+combo_filmes["values"] = opciones
+combo_filmes.current(0)
 
 root.mainloop()
