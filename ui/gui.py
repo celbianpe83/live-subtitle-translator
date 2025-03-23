@@ -75,11 +75,10 @@ class SubtitleApp:
         self.root.attributes("-alpha", int(val)/100)
 
     def confirm_opacity(self):
-      self.update_opacity(self.opacity_slider.get())
-      self.root.after(100, lambda: (
-        self.opacity_slider.pack_forget(),
-        self.set_opacity_button.pack_forget()))
-      
+        self.update_opacity(self.opacity_slider.get())
+        self.opacity_slider.pack_forget()
+        self.set_opacity_button.pack_forget()
+    
     def play_clicked(self):
         self.combo.pack_forget()
         self.entry.pack_forget()
