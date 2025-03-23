@@ -1,9 +1,10 @@
 import tkinter as tk
 from domain.translation_service import TranslationService
 from data.repository import TranslationRepository
-from infrastructure.ocr import OCRCapturer
+from infrastructure.capturers.ocr_capturer import OCRCapturer
 from ui.gui import SubtitleApp
 from infrastructure.translator_adapter import GeminiTranslatorAdapter
+from infrastructure.capture_factory import CaptureStrategyFactory
 
 REGION = {"top": 800, "left": 100, "width": 1000, "height": 120}
 DB_PATH = "traduciones.db"
@@ -19,13 +20,14 @@ class AppController:
         self.gui = SubtitleApp(root, self.on_play, self.on_stop)
         filmes = self.db.obtener_titulos_existentes()
         self.gui.set_options(filmes)
+        self.capturer_factory = CaptureStrategyFactory(use_browser=False)  # altere para True se quiser testar Browser
 
     def on_play(self, filme):
         self.filme_actual = filme
         traducciones = self.db.obtener_traducciones_por_filme(filme)
         self.translation_service.configurar_cache(traducciones)
-
-        self.ocr = OCRCapturer(region=REGION, on_texto=self.traducir_texto)
+        self.ocr = self.capturer_factory.create(region=REGION, on_texto=self.traducir_texto)
+        
         self.ocr.start()
 
     def on_stop(self):
