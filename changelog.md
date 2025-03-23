@@ -1,2 +1,1 @@
 - removiendo arquivos no necessarios (celbianpe-spec)
-- Reestructura del proyecto y mejoras en interfaz, caching y control de traducciones (celbianpe-spec)
