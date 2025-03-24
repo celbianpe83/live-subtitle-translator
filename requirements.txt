@@ -4,3 +4,4 @@ pytesseract>=0.3.10
 mss>=9.0.1
 Pillow>=10.0.0
 google-genai
+websocket-client

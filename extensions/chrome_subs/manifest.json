@@ -1,0 +1,48 @@
+{
+  "manifest_version": 3,
+  "name": "Live Subtitle Sender",
+  "version": "1.0",
+  "description": "Captura subtítulos desde plataformas de video.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "options_page": "config.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*",
+        "*://*.primevideo.com/*",
+        "*://*.netflix.com/*",
+        "*://*.crunchyroll.com/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+  {
+    "resources": ["config.js"],
+    "matches": ["<all_urls>"]
+  }
+  ],
+  "action": {
+    "default_title": "Sub Capturer",
+    "default_icon": {
+      "16": "icon_ok.png",
+      "32": "icon_ok.png",
+      "48": "icon_ok.png",
+      "128": "icon_ok.png"
+    }
+  },
+  "icons": {
+    "16": "icon_ok.png",
+    "32": "icon_ok.png",
+    "48": "icon_ok.png",
+    "128": "icon_ok.png"
+  }
+}
