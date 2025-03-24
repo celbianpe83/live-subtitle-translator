@@ -1,5 +1,5 @@
 from infrastructure.capturers.ocr_capturer import OCRCapturer
-from infrastructure.capturers.browser_capturer import BrowserSubtitleCapturer  # futura clase
+from infrastructure.capturers.browser_capturer import BrowserSubtitleCapturer
 
 class CaptureStrategyFactory:
     def __init__(self, use_browser=False):

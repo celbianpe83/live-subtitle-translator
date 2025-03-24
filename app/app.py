@@ -20,7 +20,7 @@ class AppController:
         self.gui = SubtitleApp(root, self.on_play, self.on_stop)
         filmes = self.db.obtener_titulos_existentes()
         self.gui.set_options(filmes)
-        self.capturer_factory = CaptureStrategyFactory(use_browser=False)  # altere para True se quiser testar Browser
+        self.capturer_factory = CaptureStrategyFactory(use_browser=True)  # altere para True se quiser testar Browser
 
     def on_play(self, filme):
         self.filme_actual = filme
