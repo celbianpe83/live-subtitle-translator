@@ -1,20 +1,22 @@
 from abc import ABC, abstractmethod
+from typing import Callable
 
 class SubtitleCapturer(ABC):
     """
-    Interfaz base para cualquier clase que capture subtítulos (ya sea por OCR u otro método).
+    Interface base para qualquer classe que capture subtítulos (por OCR, navegador, etc.).
     """
 
     @abstractmethod
-    def start(self):
+    def start(self, on_text_callback: Callable[[str], None]):
         """
-        Inicia la captura de subtítulos.
+        Inicia a captura de subtítulos e chama o callback ao detectar novo texto.
+        :param on_text_callback: Função que recebe o texto detectado.
         """
         pass
 
     @abstractmethod
     def stop(self):
         """
-        Detiene la captura de subtítulos.
+        Detém a captura de subtítulos.
         """
         pass

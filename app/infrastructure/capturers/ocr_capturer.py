@@ -6,16 +6,17 @@ import threading
 from infrastructure.capturers.base.base_capturer import SubtitleCapturer  # interfaz base
 
 class OCRCapturer(SubtitleCapturer):
-    def __init__(self, region, on_texto, lang="ita"):
+    def __init__(self, region, lang="ita"):
         self.region = region
-        self.on_texto = on_texto
         self.lang = lang
         self.running = False
         self.last_text = ""
         self.last_time = time.time()
+        self.on_text_callback = None
         pytesseract.pytesseract.tesseract_cmd = "/opt/homebrew/bin/tesseract"
 
-    def start(self):
+    def start(self, on_text_callback):
+        self.on_text_callback = on_text_callback
         self.running = True
         threading.Thread(target=self._loop, daemon=True).start()
 
@@ -35,6 +36,8 @@ class OCRCapturer(SubtitleCapturer):
         if texto and texto.lower() != self.last_text.lower():
             self.last_text = texto
             self.last_time = time.time()
-            self.on_texto(texto)
+            if self.on_text_callback:
+                self.on_text_callback(texto)
         elif time.time() - self.last_time > 3:
-            self.on_texto("")
+            if self.on_text_callback:
+                self.on_text_callback("")

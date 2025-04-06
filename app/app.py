@@ -26,9 +26,8 @@ class AppController:
         self.filme_actual = filme
         traducciones = self.db.obtener_traducciones_por_filme(filme)
         self.translation_service.configurar_cache(traducciones)
-        self.ocr = self.capturer_factory.create(region=REGION, on_texto=self.traducir_texto)
-        
-        self.ocr.start()
+        self.ocr = self.capturer_factory.create(region=REGION)
+        self.ocr.start(self.traducir_texto)
 
     def on_stop(self):
         self.gui.show_guardando()

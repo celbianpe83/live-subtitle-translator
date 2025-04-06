@@ -1,12 +1,15 @@
 import tkinter as tk
 from tkinter import ttk, StringVar
-
+from infrastructure.capturers.ocr_capturer import OCRCapturer
+from infrastructure.capturers.browser_capturer import BrowserSubtitleCapturer
 
 class SubtitleApp:
-    def __init__(self, root, on_play, on_stop):
+    def __init__(self, root, on_play, on_stop, use_browser=False, region=None):
         self.root = root
         self.on_play = on_play
         self.on_stop = on_stop
+        self.use_browser = use_browser
+        self.region = region
 
         self.filme_var = StringVar()
         self.input_var = StringVar()
@@ -67,6 +70,12 @@ class SubtitleApp:
 
         self.root.bind("<Configure>", self.ajustar_wrap)
 
+        # Inicializar capturer conforme a fonte
+        if self.use_browser:
+            self.capturer = BrowserSubtitleCapturer()
+        else:
+            self.capturer = OCRCapturer(self.region)
+
     def ajustar_wrap(self, event=None):
         if event:
             self.label.config(wraplength=event.width - 80)
@@ -78,7 +87,7 @@ class SubtitleApp:
         self.update_opacity(self.opacity_slider.get())
         self.opacity_slider.pack_forget()
         self.set_opacity_button.pack_forget()
-    
+
     def play_clicked(self):
         self.combo.pack_forget()
         self.entry.pack_forget()
@@ -91,6 +100,9 @@ class SubtitleApp:
         filme = self.filme_var.get()
         if filme == "Nuevo filme":
             filme = self.input_var.get()
+
+        # Iniciar captura com callback
+        self.capturer.start(self._on_subtitle)
         self.on_play(filme)
 
     def stop_clicked(self):
@@ -121,3 +133,7 @@ class SubtitleApp:
     def show_guardando(self):
         self.set_traduccion(
             "💾 Guardando nuevas traducciones...", color="yellow")
+
+    def _on_subtitle(self, texto):
+        # Método que recebe os subtítulos do capturer
+        self.set_traduccion(texto)
